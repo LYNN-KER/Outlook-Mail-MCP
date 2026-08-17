@@ -10,6 +10,12 @@
 
 不做日历、不做网盘、不做 Power Automate，也不做多账号管理。
 
+## 适用方案
+
+本方案以 **Render Web Service + Microsoft Outlook / Microsoft Graph + OAuth 2.0** 为主要部署方式，适合把邮箱能力作为一个远程 MCP 服务提供给家机。
+
+也可以在任何支持 Node.js、HTTPS 和持久化 Token 存储的环境中运行，但项目默认配置和部署文件以 Render 为准。
+
 ## 使用方式
 
 部署到 Render 后，打开服务首页，点击 **连接 Outlook 邮箱**，完成 Microsoft 登录和授权。
@@ -28,7 +34,13 @@
 - `Mail.ReadWrite`
 - `Mail.Send`
 
-Redirect URI 使用 `https://你的服务地址/auth/callback`，应用类型选择 **Web**。
+Redirect URI 使用：
+
+```text
+https://你的服务地址/auth/callback
+```
+
+应用类型选择 **Web**。
 
 ## 环境变量
 
@@ -39,13 +51,21 @@ MS_TENANT_ID=common
 TOKEN_DIR=/data
 ```
 
-Render 会自动提供 `RENDER_EXTERNAL_URL`，服务器会用它生成 OAuth 回调地址；也可以手动设置 `PUBLIC_URL`。
+在 Render 上，服务器会优先使用 `PUBLIC_URL`，否则使用 Render 自动提供的 `RENDER_EXTERNAL_URL` 生成 OAuth 回调地址。
 
-## Render
+## Render 部署
 
-仓库已经包含 `render.yaml`，可以直接用 Blueprint 部署。
+仓库已经包含 `render.yaml`，可以直接使用 Render Blueprint 部署。
 
-Token 存在 Render 持久化磁盘 `/data` 中，不会提交到 GitHub。
+Render 配置包含：
+
+- Node.js Web Service
+- `/health` 健康检查
+- 1 GB 持久化磁盘
+- `/data` Token 存储目录
+- Microsoft OAuth 所需环境变量
+
+Token 保存在 Render 持久化磁盘中，不会提交到 GitHub。
 
 ## MCP 工具
 
@@ -68,4 +88,4 @@ npm start
 
 ## 安全
 
-OAuth 密码不会交给家机。Microsoft 登录完成后，服务只保存 OAuth token；token 文件权限为仅当前进程用户可读写。
+OAuth 密码不会交给家机。Microsoft 登录完成后，服务只保存 OAuth token；Token 文件权限设置为仅当前进程用户可读写。
