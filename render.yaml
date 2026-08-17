@@ -1,0 +1,21 @@
+services:
+  - type: web
+    name: outlook-mail-mcp
+    runtime: node
+    plan: starter
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: MS_CLIENT_ID
+        sync: false
+      - key: MS_CLIENT_SECRET
+        sync: false
+      - key: MS_TENANT_ID
+        value: common
+      - key: TOKEN_DIR
+        value: /data
+    disk:
+      name: outlook-mail-data
+      mountPath: /data
+      sizeGB: 1
