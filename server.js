@@ -11,7 +11,7 @@ const PORT = Number(process.env.PORT || 3000);
 const CLIENT_ID = process.env.MS_CLIENT_ID || '';
 const CLIENT_SECRET = process.env.MS_CLIENT_SECRET || '';
 const TENANT_ID = process.env.MS_TENANT_ID || 'common';
-const BASE_URL = (process.env.PUBLIC_URL || `http://localhost:${PORT}`).replace(/\/$/, '');
+const BASE_URL = (process.env.PUBLIC_URL || process.env.RENDER_EXTERNAL_URL || `http://localhost:${PORT}`).replace(/\/$/, '');
 const SCOPES = ['openid', 'profile', 'offline_access', 'User.Read', 'Mail.Read', 'Mail.ReadWrite', 'Mail.Send'];
 const TOKEN_DIR = process.env.TOKEN_DIR || path.join(process.cwd(), 'data');
 const TOKEN_FILE = path.join(TOKEN_DIR, 'tokens.json');
@@ -21,14 +21,8 @@ let oauthState = null;
 let tokens = loadTokens();
 let refreshPromise = null;
 
-function loadTokens() {
-  try { return JSON.parse(fs.readFileSync(TOKEN_FILE, 'utf8')); } catch { return null; }
-}
-function saveTokens(value) {
-  fs.mkdirSync(TOKEN_DIR, { recursive: true, mode: 0o700 });
-  fs.writeFileSync(TOKEN_FILE, JSON.stringify(value, null, 2), { mode: 0o600 });
-  tokens = value;
-}
+function loadTokens() { try { return JSON.parse(fs.readFileSync(TOKEN_FILE, 'utf8')); } catch { return null; } }
+function saveTokens(value) { fs.mkdirSync(TOKEN_DIR, { recursive: true, mode: 0o700 }); fs.writeFileSync(TOKEN_FILE, JSON.stringify(value, null, 2), { mode: 0o600 }); tokens = value; }
 function redirectUri() { return `${BASE_URL}/auth/callback`; }
 function authBase() { return `https://login.microsoftonline.com/${TENANT_ID}/oauth2/v2.0`; }
 
@@ -54,19 +48,10 @@ async function accessToken() {
 
 async function graph(pathname, options = {}) {
   const token = await accessToken();
-  const response = await fetch(`${GRAPH}${pathname}`, { ...options, headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json', ...(options.headers || {}) } });
-  const text = await response.text();
-  let data = {};
-  try { data = text ? JSON.parse(text) : {}; } catch { data = { raw: text }; }
-  if (response.status === 401 && tokens?.refresh_token) {
-    tokens.expires_at = 0;
-    const retryToken = await accessToken();
-    const retry = await fetch(`${GRAPH}${pathname}`, { ...options, headers: { authorization: `Bearer ${retryToken}`, 'content-type': 'application/json', ...(options.headers || {}) } });
-    const retryText = await retry.text();
-    let retryData = {}; try { retryData = retryText ? JSON.parse(retryText) : {}; } catch { retryData = { raw: retryText }; }
-    if (!retry.ok) throw new Error(retryData.error?.message || `Graph error ${retry.status}`);
-    return retryData;
-  }
+  const doFetch = currentToken => fetch(`${GRAPH}${pathname}`, { ...options, headers: { authorization: `Bearer ${currentToken}`, 'content-type': 'application/json', ...(options.headers || {}) } });
+  let response = await doFetch(token);
+  if (response.status === 401 && tokens?.refresh_token) { tokens.expires_at = 0; response = await doFetch(await accessToken()); }
+  const text = await response.text(); let data = {}; try { data = text ? JSON.parse(text) : {}; } catch { data = { raw: text }; }
   if (!response.ok) throw new Error(data.error?.message || `Graph error ${response.status}`);
   return data;
 }
@@ -96,20 +81,11 @@ server.setRequestHandler(CallToolRequestSchema, async request => {
       return { content: [{ type: 'text', text: '邮件已回复。' }] };
     }
     throw new Error(`未知工具：${request.params.name}`);
-  } catch (error) {
-    return { isError: true, content: [{ type: 'text', text: error.message }] };
-  }
+  } catch (error) { return { isError: true, content: [{ type: 'text', text: error.message }] }; }
 });
 
-async function handleMcp(req, res) {
-  const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined });
-  await server.connect(transport);
-  await transport.handleRequest(req, res);
-}
-
-function send(res, status, body, contentType = 'text/html; charset=utf-8') {
-  res.writeHead(status, { 'content-type': contentType }); res.end(body);
-}
+async function handleMcp(req, res) { const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined }); await server.connect(transport); await transport.handleRequest(req, res); }
+function send(res, status, body, contentType = 'text/html; charset=utf-8') { res.writeHead(status, { 'content-type': contentType }); res.end(body); }
 
 const app = http.createServer(async (req, res) => {
   try {
@@ -135,5 +111,4 @@ const app = http.createServer(async (req, res) => {
     send(res, 404, 'Not Found');
   } catch (error) { console.error(error); send(res, 500, error.message); }
 });
-
 app.listen(PORT, '0.0.0.0', () => console.log(`家机 Mail MCP listening on ${PORT}`));
