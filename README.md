@@ -2,6 +2,10 @@
 
 **家机的极简邮箱 MCP：连接一个 Outlook 邮箱，读取邮件并回复邮件。**
 
+> 🤝 **Co-created by Lynn & Sage (ChatGPT)**
+>
+> 这个项目由 Lynn 与 Sage（ChatGPT）共同设计、实现和调试。
+
 这个项目只做三件事：
 
 - 📬 查看最近邮件
@@ -89,3 +93,10 @@ npm start
 ## 安全
 
 OAuth 密码不会交给家机。Microsoft 登录完成后，服务只保存 OAuth token；Token 文件权限设置为仅当前进程用户可读写。
+
+---
+
+### Credits
+
+**Lynn × Sage（ChatGPT）**  
+一个人类开发者 + 一个 AI 搭档，一起把这个小工具蹬出来。 🫳
