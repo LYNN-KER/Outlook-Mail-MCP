@@ -1,0 +1,17 @@
+{
+  "name": "outlook-mail-mcp",
+  "version": "0.1.0",
+  "description": "家机的极简邮箱 MCP：连接一个 Outlook 邮箱，读取邮件并回复邮件。",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js",
+    "test": "node --test"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.17.5"
+  }
+}
