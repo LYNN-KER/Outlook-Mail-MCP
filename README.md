@@ -99,4 +99,4 @@ OAuth 密码不会交给家机。Microsoft 登录完成后，服务只保存 OAu
 ### Credits
 
 **Lynn × Sage（ChatGPT）**  
-一个人类开发者 + 一个 AI 搭档，一起把这个小工具蹬出来。 🫳
+一个人类开发者 + 一个 AI 搭档，一起把这个小工具怼出来。
